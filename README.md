@@ -24,11 +24,13 @@ This template keeps those ideas but removes the Claude-only assumption. Instead 
 | `CLAUDE.md` | Claude Code | Claude entry point that delegates to `AGENTS.md` |
 | `GEMINI.md` | Gemini CLI and Gemini-aware agents | Gemini entry point that delegates to `AGENTS.md` |
 | `.github/copilot-instructions.md` | GitHub Copilot Chat | Repo instructions for Copilot |
-| `.cursorrules` | Cursor legacy rules | Compact Cursor fallback |
 | `.cursor/rules/token-efficient.mdc` | Cursor project rules | Always-on Cursor rule file |
-| `.windsurfrules` | Windsurf | Compact Windsurf rules |
+| `.cursorrules` | Cursor (deprecated) | Legacy fallback — Cursor no longer reads this file |
+| `.windsurfrules` | Windsurf | Windsurf rules |
+| `.clinerules` | Cline | Cline entry point that delegates to `AGENTS.md` |
+| `.roo/rules/token-efficient.md` | Roo Code | Always-on Roo Code rule file |
 | `prompts/universal-token-efficient.md` | Any chat agent | Copy-paste prompt for agents without file support |
-| `profiles/` | Optional overlays | Extra rules for coding, automation, and research |
+| `profiles/` | Optional overlays | Extra rules for coding, automation, debugging, and research |
 
 ## Core Behavior
 
@@ -55,11 +57,14 @@ AGENTS.md
 CLAUDE.md
 GEMINI.md
 .github/copilot-instructions.md
-.cursorrules
 .cursor/rules/token-efficient.mdc
 .windsurfrules
+.clinerules
+.roo/rules/token-efficient.md
 prompts/universal-token-efficient.md
 ```
+
+`.cursorrules` is deprecated — Cursor no longer reads it. Keep it only for backward compatibility with old Cursor installations.
 
 For one-off chats, paste the prompt from:
 
@@ -83,7 +88,7 @@ Copilot Chat can use `.github/copilot-instructions.md` as repository guidance. T
 
 ### Cursor
 
-Cursor can use `.cursor/rules/*.mdc` and older `.cursorrules` files. This template includes both for compatibility.
+Cursor reads `.cursor/rules/*.mdc` with `alwaysApply: true`. The older `.cursorrules` file is deprecated and kept only for installations that have not migrated to the new rules system.
 
 ### Windsurf
 
@@ -92,6 +97,14 @@ Windsurf can use `.windsurfrules`. The file points back to the same concise rule
 ### Gemini
 
 Gemini-aware tools may read `GEMINI.md`. This template keeps it short and delegates to `AGENTS.md`.
+
+### Cline
+
+Cline reads `.clinerules` from the project root. This template includes a minimal file that delegates to `AGENTS.md`.
+
+### Roo Code
+
+Roo Code reads files from `.roo/rules/`. This template includes `.roo/rules/token-efficient.md` with `alwaysApply` behavior, delegating to `AGENTS.md`.
 
 ### DeepSeek, Ollama, Continue, and Local Agents
 
@@ -105,7 +118,8 @@ Use profiles as optional overlays. Do not load all of them by default.
 
 | Profile | Use when |
 | --- | --- |
-| `profiles/coding.md` | Development, refactors, debugging, reviews |
+| `profiles/coding.md` | Development, refactors, and code reviews |
+| `profiles/debugging.md` | Bug investigation and root cause analysis |
 | `profiles/automation.md` | Pipelines, multi-agent loops, parseable output |
 | `profiles/research.md` | Documentation, comparison, external-source analysis |
 
@@ -115,6 +129,18 @@ Recommended pattern:
 Follow AGENTS.md.
 Also apply profiles/coding.md for this task.
 ```
+
+## Prompt Caching
+
+Most providers (Claude, GPT-4o, Gemini) cache stable prompt prefixes when the same content appears at the start of repeated requests. `AGENTS.md` is designed to benefit from this: it is short, stable, and loaded first, so its content is cached across sessions and turns. When caching is active, the input cost of `AGENTS.md` drops to near zero after the first request, making the input/output token equation strongly positive even in short sessions.
+
+To preserve caching effectiveness:
+
+- Do not add dynamic content (timestamps, session IDs, file listings) to `AGENTS.md` or adapter files.
+- Keep profiles static and reference them by name rather than inlining their content.
+- Add project-specific rules to a separate file rather than editing `AGENTS.md` directly.
+
+Adapter files (`.cursorrules`, `.windsurfrules`, etc.) no longer repeat the rule summary. If the agent reads `AGENTS.md`, the summary is redundant input. If it does not, the summary is too short to be useful. Removing it reduces the recurring input cost of every adapter file to a single line.
 
 ## Token Economics
 
